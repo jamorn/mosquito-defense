@@ -1,0 +1,3 @@
+ตัวอย่างประโยคภาษาอังกฤษสำหรับใช้โปรโมทเกม:
+"Mosquito Defense is an educational Tower Defense game that teaches children about real-world diseases through an engaging Counter-Play System. By utilizing an Intransitive Balance (Rock-Paper-Scissors mechanic), the game ensures that no single strategy is invincible, teaching kids that every problem has a solution if they think critically."
+(เกม Mosquito Defense เป็นเกมเพื่อการศึกษาที่สอนเด็กเรื่องโรคในโลกจริงผ่าน ระบบการแก้ทาง โดยใช้ สมดุลแบบวงกลม (ระบบเป่ายิ้งฉุบ) เพื่อให้แน่ใจว่าไม่มีกลยุทธ์ใดที่ไร้พ่าย ซึ่งสอนให้เด็กรู้ว่าทุกปัญหามีทางออกหากพวกเขาคิดวิเคราะห์อย่างเป็นระบบ)

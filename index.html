@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="🦟 Mosquito Defense - เกม Tower Defense ป้องกันบ้านจากยุง พร้อมระบบ Counter-Play"
+    />
+    <meta
+      name="keywords"
+      content="tower defense, game, mosquito, 2.5D, react, canvas"
+    />
+    <title>🦟 Mosquito Defense - Tower Defense Game</title>
+    <style>
+      /* Loading screen */
+      #root:empty::after {
+        content: "🦟 Loading Mosquito Defense...";
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-size: 1.5rem;
+        color: #06b6d4;
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
