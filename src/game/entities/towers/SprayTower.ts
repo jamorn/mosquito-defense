@@ -1,13 +1,17 @@
 // src/game/entities/towers/SprayTower
-import { BaseTower } from './BaseTower';
-import { TOWER_CONFIGS } from '../../../config/towers.config';
-import { Mosquito } from '../mosquitoes/Mosquito';
-import { LaserBeam } from '../../../types/game.types';
-import { SoundSystem } from '../../engine/SoundSystem';
+import { BaseTower } from "./BaseTower";
+import { TOWER_CONFIGS } from "../../../config/towers.config";
+import { Mosquito } from "../mosquitoes/Mosquito";
+import { LaserBeam } from "../../../types/game.types";
+import { SoundSystem } from "../../engine/SoundSystem";
+import { SprayCloudSystem } from "../../systems/SprayCloudSystem";
 
 export class SprayTower extends BaseTower {
+  // 🆕 อ้างอิงถึงระบบละออง (ตั้งจากภายนอกใน App) — ใช้ฉีดละอองเข้าก๊อบ
+  public cloudSystem: SprayCloudSystem | null = null;
+
   constructor(x: number, y: number) {
-    super(x, y, 'SPRAY_SLOW', TOWER_CONFIGS.SPRAY_SLOW);
+    super(x, y, "SPRAY_SLOW", TOWER_CONFIGS.SPRAY_SLOW);
   }
 
   public updateAndAttack(
@@ -16,21 +20,66 @@ export class SprayTower extends BaseTower {
     _lasers: LaserBeam[],
     addParticles: (x: number, y: number, color: string, count: number) => void,
     soundSystem: SoundSystem,
-    addFloatingText?: (x: number, y: number, text: string, color: string) => void
+    addFloatingText?: (
+      x: number,
+      y: number,
+      text: string,
+      color: string,
+    ) => void,
   ): void {
     if (now - this.lastFired < this.getFireInterval()) return;
-    
-    const targets = mosquitoes.filter(m => this.getDistanceTo(m) <= this.getRange());
+
+    const targets = mosquitoes.filter(
+      (m) => this.getDistanceTo(m) <= this.getRange(),
+    );
     if (targets.length > 0) {
       this.lastFired = now;
+
+      // 🎯 หา "จุดกลางฝูงยุง" ใน range — ละอองจะพุ่งไปนอนตรงนั้น
+      let avgX = 0;
+      let avgY = 0;
+      for (const m of targets) {
+        avgX += m.x;
+        avgY += m.y;
+      }
+      avgX /= targets.length;
+      avgY /= targets.length;
+
+      // จำกัดไม่ให้เกิน range ของป้อม (ยิงไกลสุดแค่ปลาย range)
+      const dx = avgX - this.x;
+      const dy = avgY - this.y;
+      const dist = Math.hypot(dx, dy);
+      const maxReach = this.getRange();
+      let aimX = avgX;
+      let aimY = avgY;
+      if (dist > maxReach) {
+        aimX = this.x + (dx / dist) * maxReach;
+        aimY = this.y + (dy / dist) * maxReach;
+      }
+
+      // 🆕 วางละออง "พุ่งไปทางยุง แล้วนอนตรงนั้น" (จุดกลางฝูง)
+      if (this.cloudSystem) {
+        this.cloudSystem.inject(aimX, aimY, 70);
+      }
+
+      // ดาเมจเล็กน้อย (เปียก/พิษแรก) + particle ให้เห็นพุ่งตามทิศ
       const dmg = Math.round(this.getDamage());
-      targets.forEach(m => {
+      targets.forEach((m) => {
         m.takeDamage(dmg);
-        m.applySlow(1500);
-        addParticles(m.x, m.y, '#34d399', 3);
-        if (addFloatingText) addFloatingText(m.x, m.y - 15, `-${dmg}`, '#ef4444');
+        if (addFloatingText)
+          addFloatingText(m.x, m.y - 15, `-${dmg}`, "#ef4444");
       });
-      soundSystem.play('spray');
+
+      // 🆕 เส้นฉีดพุ่งจากหัวฉีดป้อม → จุดละออง (เห็นทิศทางตามยุง)
+      const steps = 10;
+      for (let i = 0; i < steps; i++) {
+        const t = i / steps;
+        const px = this.x + (aimX - this.x) * t;
+        const py = this.y + (aimY - this.y) * t;
+        addParticles(px, py, "#5eead4", 1);
+      }
+
+      soundSystem.play("spray");
     }
   }
 }

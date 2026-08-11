@@ -1,10 +1,10 @@
 // src/game/entities/towers/BaseTower.ts
-import { GameObject } from '../GameObject';
-import { TowerType } from '../../../types/game.types';
-import { TowerConfig, SerializedTower } from '../../../types/tower.types';
-import { Mosquito } from '../mosquitoes/Mosquito';
-import { LaserBeam } from '../../../types/game.types';
-import { SoundSystem } from '../../engine/SoundSystem';
+import { GameObject } from "../GameObject";
+import { TowerType } from "../../../types/game.types";
+import { TowerConfig, SerializedTower } from "../../../types/tower.types";
+import { Mosquito } from "../mosquitoes/Mosquito";
+import { LaserBeam } from "../../../types/game.types";
+import { SoundSystem } from "../../engine/SoundSystem";
 
 export abstract class BaseTower extends GameObject {
   public id: string;
@@ -81,7 +81,12 @@ export abstract class BaseTower extends GameObject {
     lasers: LaserBeam[],
     addParticles: (x: number, y: number, color: string, count: number) => void,
     soundSystem: SoundSystem,
-    addFloatingText?: (x: number, y: number, text: string, color: string) => void
+    addFloatingText?: (
+      x: number,
+      y: number,
+      text: string,
+      color: string,
+    ) => void,
   ): void;
 
   public draw(ctx: CanvasRenderingContext2D): void {
@@ -108,7 +113,7 @@ export abstract class BaseTower extends GameObject {
     ctx.arc(this.x, this.y, 18, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = "#1e293b";
     ctx.beginPath();
     ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
     ctx.fill();
@@ -119,18 +124,18 @@ export abstract class BaseTower extends GameObject {
     ctx.fill();
 
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillText(`L${this.level}`, this.x, this.y + 26);
     ctx.restore();
   }
 
   public drawRangeHighlight(ctx: CanvasRenderingContext2D): void {
     ctx.save();
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
+    ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 6]);
     ctx.beginPath();

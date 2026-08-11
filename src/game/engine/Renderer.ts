@@ -304,6 +304,62 @@ export class Renderer {
   }
 
   /**
+   * 🆕 วาด Ghost Preview ของป้อมขณะวาง (ตามตำแหน่งเมาส์)
+   *    - สีเขียว/สีป้อม = วางได้ (canPlace === true)
+   *    - สีแดงกึ่งโปร่งใส = วางไม่ได้
+   *    พร้อมวง Range ให้เห็นก่อนวาง + วงบอกระยะห้ามวาง
+   */
+  public drawTowerPreview(
+    x: number,
+    y: number,
+    config: import("../../types/tower.types").TowerConfig,
+    canPlace: boolean,
+  ): void {
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.55;
+    this.ctx.setLineDash([6, 6]);
+
+    // Range Highlight (จาก config.range)
+    this.ctx.strokeStyle = canPlace
+      ? "rgba(34, 197, 94, 0.4)"
+      : "rgba(239, 68, 68, 0.4)";
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, config.range, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // ตัวป้อม Ghost
+    this.ctx.shadowBlur = 14;
+    this.ctx.shadowColor = canPlace ? config.glowColor : "#ef4444";
+    this.ctx.strokeStyle = canPlace ? config.glowColor : "#f87171";
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 18, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = canPlace ? "#164e37" : "#450a0a";
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 15, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.fillStyle = canPlace ? config.glowColor : "#ef4444";
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 8, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // วงเลื่อนตำแหน่ง (ระยะห้ามวาง 35 ตาม isValidPlacement)
+    this.ctx.strokeStyle = canPlace
+      ? "rgba(34, 197, 94, 0.7)"
+      : "rgba(239, 68, 68, 0.7)";
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 35, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    this.ctx.restore();
+  }
+
+  /**
    * ==========================================
    * MAIN RENDER METHOD - 2.5D Lite
    * ==========================================
