@@ -169,10 +169,11 @@ export class Background25D {
 
   private drawSky(): void {
     const gradient = this.ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    gradient.addColorStop(0, "#050810");
-    gradient.addColorStop(0.3, "#0a0e1a");
-    gradient.addColorStop(0.6, "#0f172a");
-    gradient.addColorStop(1, "#1a2332");
+    // 🎨 ปรับให้สว่างขึ้น (เคย #050810 → #1a2332 มืดเกินไปสำหรับจอเล็ก/mobile)
+    gradient.addColorStop(0, "#0b1220");
+    gradient.addColorStop(0.3, "#142033");
+    gradient.addColorStop(0.6, "#1e2b40");
+    gradient.addColorStop(1, "#2c3a52");
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }
@@ -274,7 +275,8 @@ export class Background25D {
 
   private drawTrees(layer: number): void {
     const isFar = layer === 1;
-    const baseAlpha = isFar ? 0.25 : 0.4;
+    // 🎨 ลดความเด่นของต้นไม้ให้เป็นฉากหลังจางๆ (ไม่โผล่กวนสายตากลางจอ)
+    const baseAlpha = isFar ? 0.16 : 0.28;
     const swayAmount = isFar ? 1 : 2;
 
     for (const tree of this.trees) {
@@ -283,10 +285,10 @@ export class Background25D {
       // ต้นไม้โยกตามลม
       const sway = Math.sin(this.time * 0.5 + tree.swayPhase) * swayAmount;
 
-      const trunkColor = `rgba(92, 64, 40, ${baseAlpha})`;
+      const trunkColor = `rgba(120, 90, 60, ${baseAlpha})`;
       const leafColor = isFar
-        ? `rgba(16, 120, 90, ${baseAlpha})`
-        : `rgba(5, 100, 75, ${baseAlpha})`;
+        ? `rgba(30, 140, 110, ${baseAlpha})`
+        : `rgba(20, 120, 95, ${baseAlpha})`;
 
       this.ctx.save();
 
@@ -349,8 +351,9 @@ export class Background25D {
       0,
       CANVAS_HEIGHT,
     );
-    gradient.addColorStop(0, "rgba(15, 23, 42, 0)");
-    gradient.addColorStop(1, "rgba(15, 23, 42, 0.5)");
+    // 🎨 ลดความมืดก้นจอ (เคย 0.5, สี #0f172a → ลดเป็น 0.28, สีสว่างขึ้น)
+    gradient.addColorStop(0, "rgba(30, 44, 66, 0)");
+    gradient.addColorStop(1, "rgba(30, 44, 66, 0.28)");
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, CANVAS_HEIGHT - 100, CANVAS_WIDTH, 100);
   }

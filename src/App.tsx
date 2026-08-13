@@ -37,6 +37,7 @@ import { TowerInspector } from "./components/Inspector/TowerInspector";
 import { GameOverOverlay } from "./components/Overlays/GameOverOverlay";
 import { VictoryOverlay } from "./components/Overlays/VictoryOverlay";
 import { PauseOverlay } from "./components/Overlays/PauseOverlay";
+import { HowToPlayOverlay } from "./components/Overlays/HowToPlayOverlay";
 import { OrientationLock } from "./components/OrientationLock";
 
 // Utils
@@ -63,6 +64,7 @@ export default function App() {
     useState<BaseTower | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [showHowTo, setShowHowTo] = useState<boolean>(true); // 🆕 เปิดวิธีเล่นครั้งแรก
   const [currentTime, setCurrentTime] = useState<number>(performance.now());
   const [failedWave, setFailedWave] = useState<number | null>(null);
 
@@ -630,6 +632,7 @@ export default function App() {
             onStartWave={startNextWave}
             onSave={saveGame}
             onLoad={loadGame}
+            onShowHelp={() => setShowHowTo(true)}
           />
 
           <div className="relative border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
@@ -690,17 +693,6 @@ export default function App() {
               setSelectedTowerInstance(null);
             }}
           />
-
-          {/* ตัว Inspector — เปิดเมื่อมีป้อมถูกเลือก (วางซ้อน BuildBar, บนสุด) */}
-          {selectedTowerInstance && (
-            <TowerInspector
-              selectedTowerInstance={selectedTowerInstance}
-              coins={coins}
-              onUpgrade={handleUpgradeTower}
-              onSell={handleSellTower}
-              onClose={() => setSelectedTowerInstance(null)}
-            />
-          )}
         </aside>
 
         {/* 🆕 Bottom Bar — สำหรับมือถือ/tablet แนวตั้ง (build bar แบบแถว) */}
@@ -719,6 +711,18 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* 🆕 TowerInspector → Modal กลางจอ (ลอยเหนือทุกอย่าง, กดขาย/อัปเกรดง่าย) */}
+      <TowerInspector
+        selectedTowerInstance={selectedTowerInstance}
+        coins={coins}
+        onUpgrade={handleUpgradeTower}
+        onSell={handleSellTower}
+        onClose={() => setSelectedTowerInstance(null)}
+      />
+
+      {/* 🆕 HowToPlay — วิธีเล่น (เปิดครั้งแรก + ดูได้จากปุ่ม ❓) */}
+      {showHowTo && <HowToPlayOverlay onClose={() => setShowHowTo(false)} />}
     </OrientationLock>
   );
 }

@@ -73,17 +73,17 @@ export class Renderer {
 
     // Layer 1: พื้นถนน (ขอบอ่อน, แทบไม่ glow)
     this.ctx.shadowBlur = 0;
-    this.ctx.strokeStyle = "rgba(14, 116, 144, 0.55)";
+    this.ctx.strokeStyle = "rgba(14, 116, 144, 0.65)";
     this.ctx.lineWidth = 14;
     this.ctx.stroke();
 
-    // Layer 2: พื้นถนนทึบด้านใน
-    this.ctx.strokeStyle = "rgba(8, 51, 68, 0.85)";
+    // Layer 2: พื้นถนนทึบด้านใน (สว่างขึ้นจากเดิม 0.85 → 0.7 สีฟ้าเข้มขึ้น)
+    this.ctx.strokeStyle = "rgba(21, 94, 117, 0.7)";
     this.ctx.lineWidth = 11;
     this.ctx.stroke();
 
-    // Layer 3: เส้นกึ่งกลางจาง (บอกทิศทาง, ไม่เรืองแสง)
-    this.ctx.strokeStyle = "rgba(125, 211, 252, 0.45)";
+    // Layer 3: เส้นกึ่งกลางจาง (บอกทิศทาง, สว่างขึ้นให้เห็นชัด)
+    this.ctx.strokeStyle = "rgba(125, 211, 252, 0.6)";
     this.ctx.lineWidth = 1.5;
     this.ctx.stroke();
 

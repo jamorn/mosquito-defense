@@ -8,6 +8,7 @@ import {
   VolumeX,
   Save,
   FolderOpen,
+  HelpCircle,
 } from "lucide-react";
 
 interface TopBarProps {
@@ -25,6 +26,7 @@ interface TopBarProps {
   onStartWave: () => void;
   onSave: () => void;
   onLoad: () => void;
+  onShowHelp: () => void;
 }
 
 export function TopBar({
@@ -42,6 +44,7 @@ export function TopBar({
   onStartWave,
   onSave,
   onLoad,
+  onShowHelp,
 }: TopBarProps) {
   return (
     <div className="w-full max-w-[800px] flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-xl mb-3 shadow-lg flex-wrap gap-3">
@@ -65,6 +68,13 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <button
+          onClick={onShowHelp}
+          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition"
+          title="วิธีเล่น (How to Play)"
+        >
+          <HelpCircle className="w-4 h-4 text-cyan-400" />
+        </button>
         <button
           onClick={onSave}
           disabled={isWaveActive || gameOver || gameWon}
