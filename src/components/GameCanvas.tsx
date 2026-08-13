@@ -14,6 +14,8 @@ interface GameCanvasProps {
   onCanvasTouchStart?: (x: number, y: number) => void;
   onCanvasTouchMove?: (x: number, y: number) => void;
   onCanvasTouchEnd?: () => void;
+  // 🆕 maxHeight สำหรับ fit จอ (px) — มาจาก useDevice (ตาม device)
+  maxHeight?: number;
 }
 
 export function GameCanvas({
@@ -24,6 +26,7 @@ export function GameCanvas({
   onCanvasTouchMove,
   onCanvasTouchEnd,
   canvasRef,
+  maxHeight,
 }: GameCanvasProps) {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!onCanvasMouseMove || !canvasRef.current) return;
@@ -80,7 +83,7 @@ export function GameCanvas({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       className="cursor-crosshair block w-full max-w-[800px] h-auto aspect-[4/3] touch-none"
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "none", maxHeight: maxHeight }}
     />
   );
 }

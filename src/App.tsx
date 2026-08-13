@@ -40,6 +40,9 @@ import { PauseOverlay } from "./components/Overlays/PauseOverlay";
 import { HowToPlayOverlay } from "./components/Overlays/HowToPlayOverlay";
 import { OrientationLock } from "./components/OrientationLock";
 
+// Hooks
+import { useDevice } from "./hooks/useDevice";
+
 // Utils
 import { pointToSegmentDistance } from "./utils/math";
 
@@ -67,6 +70,10 @@ export default function App() {
   const [showHowTo, setShowHowTo] = useState<boolean>(true); // 🆕 เปิดวิธีเล่นครั้งแรก
   const [currentTime, setCurrentTime] = useState<number>(performance.now());
   const [failedWave, setFailedWave] = useState<number | null>(null);
+
+  // 🆕 Device / Orientation detection (JS) — สำหรับปรับ layout+fit จอให้แม่นยำ
+  const device = useDevice();
+  const { hasSidebar, playableHeight, isTouch, deviceType } = device;
 
   // ==========================================
   // REFS
@@ -614,9 +621,9 @@ export default function App() {
 
   return (
     <OrientationLock>
-      <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950 text-white font-sans">
+      <div className="flex min-h-screen bg-slate-950 text-white font-sans">
         {/* CANVAS AREA */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 min-w-0">
           <TopBar
             coins={coins}
             lives={lives}
@@ -633,11 +640,16 @@ export default function App() {
             onSave={saveGame}
             onLoad={loadGame}
             onShowHelp={() => setShowHowTo(true)}
+            isDesktop={deviceType === "desktop"}
           />
 
-          <div className="relative border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
+          <div
+            className="relative border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900 w-full max-w-[860px] h-auto"
+            style={{ maxHeight: playableHeight }}
+          >
             <GameCanvas
               canvasRef={canvasRef}
+              maxHeight={playableHeight}
               onCanvasClick={handleCanvasClick}
               onCanvasMouseMove={handleCanvasMouseMove}
               onCanvasMouseLeave={handleCanvasMouseLeave}
@@ -681,25 +693,18 @@ export default function App() {
         </div>
 
         {/* 🆕 RIGHT BUILD BAR — สไตล์ RTS (Red Alert) ทางขวามือ
-           แสดง icon ป้อมล้วน วางซ้อนกัน ขนาดกะทัดรัด เหมาะ PC + Tablet/Mobile */}
-        <aside className="flex flex-col items-center gap-4 lg:w-[88px] border-l border-slate-800 bg-slate-900 py-4 px-2 order-last lg:order-none">
-          <BuildBar
-            direction="col"
-            selectedTowerType={selectedTowerType}
-            selectedTowerInstance={selectedTowerInstance}
-            coins={coins}
-            onSelectTower={(type) => {
-              setSelectedTowerType(type);
-              setSelectedTowerInstance(null);
-            }}
-          />
-        </aside>
-
-        {/* 🆕 Bottom Bar — สำหรับมือถือ/tablet แนวตั้ง (build bar แบบแถว) */}
-        <div className="lg:hidden w-full border-t border-slate-800 bg-slate-900 px-3 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto justify-center">
+           ใช้ useDevice ตัดสิน: โชว์เมื่อ hasSidebar (PC เสมอ + มือถือ/tablet landscape)
+           ความกว้าง sidebar ตาม deviceType (desktop กว้างกว่า) */}
+        {hasSidebar && (
+          <aside
+            className={`flex flex-col items-center gap-2 flex-shrink-0 border-l border-slate-800 bg-slate-900 py-2 px-1 ${
+              deviceType === "desktop"
+                ? "w-[84px] md:w-[88px]"
+                : "w-[52px] sm:w-[58px]"
+            }`}
+          >
             <BuildBar
-              direction="row"
+              direction="col"
               selectedTowerType={selectedTowerType}
               selectedTowerInstance={selectedTowerInstance}
               coins={coins}
@@ -708,8 +713,26 @@ export default function App() {
                 setSelectedTowerInstance(null);
               }}
             />
+          </aside>
+        )}
+
+        {/* 🆕 Bottom Bar — เฉพาะเมื่อไม่มี sidebar (มือถือ/tablet แนวตั้งแคบ) */}
+        {!hasSidebar && (
+          <div className="w-full border-t border-slate-800 bg-slate-900 px-2 py-2">
+            <div className="flex items-center gap-2 overflow-x-auto justify-center">
+              <BuildBar
+                direction="row"
+                selectedTowerType={selectedTowerType}
+                selectedTowerInstance={selectedTowerInstance}
+                coins={coins}
+                onSelectTower={(type) => {
+                  setSelectedTowerType(type);
+                  setSelectedTowerInstance(null);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 🆕 TowerInspector → Modal กลางจอ (ลอยเหนือทุกอย่าง, กดขาย/อัปเกรดง่าย) */}

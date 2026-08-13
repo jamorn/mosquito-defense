@@ -5,32 +5,16 @@
 // 🎯 ตามที่พี่ต้องการ: หน้าจอขนาดเล็ก (มือถือ/tablet) ให้เล่นเป็นแนวนอนเสมอ
 //   - ตราบใดที่หน้าจอยัง "ตั้ง" (portrait) → แสดง overlay บอกให้หมุนจอ
 //   - เปิดเมื่อจอแนวนอน (landscape) → ซ่อน overlay เล่นได้ตามปกติ
-//   - ใช้ CSS media query ตอบสนองทันทีเมื่อหมุนจอ
-import React, { useState, useEffect } from "react";
-
+//   - ใช้ JS (useDevice) ตรวจจับ device/orientation แม่นยำกว่าการพึ่ง CSS อย่างเดียว
+import React from "react";
+import { useDevice } from "../hooks/useDevice";
 export function OrientationLock({ children }: { children: React.ReactNode }) {
-  const [isPortrait, setIsPortrait] = useState(false);
+  const { deviceType, orientation } = useDevice();
 
-  useEffect(() => {
-    const check = () => {
-      // ถ้าหน้าจอเล็ก (มือถือ/tablet) และจอตั้ง (portrait) → ล็อกบังคับแนวนอน
-      const smallScreen =
-        window.matchMedia("(max-width: 1024px)").matches ||
-        navigator.maxTouchPoints > 0;
-      setIsPortrait(smallScreen && window.innerHeight > window.innerWidth);
-    };
-
-    check();
-    const mq = window.matchMedia("(orientation: portrait)");
-    mq.addEventListener("change", check);
-    window.addEventListener("resize", check);
-
-    return () => {
-      mq.removeEventListener("change", check);
-      window.removeEventListener("resize", check);
-    };
-  }, []);
-
+  // จอเล็ก (mobile/tablet) + แนวตั้ง → บังคับหมุนเป็นแนวนอน
+  const isPortrait =
+    (deviceType === "mobile" || deviceType === "tablet") &&
+    orientation === "portrait";
   if (isPortrait) {
     return (
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 text-center p-8">

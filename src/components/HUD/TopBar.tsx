@@ -27,6 +27,8 @@ interface TopBarProps {
   onSave: () => void;
   onLoad: () => void;
   onShowHelp: () => void;
+  // 🆕 ซ่อนปุ่ม Save/Load บนมือถือ/tablet (ไม่จำเป็น)
+  isDesktop: boolean;
 }
 
 export function TopBar({
@@ -45,6 +47,7 @@ export function TopBar({
   onSave,
   onLoad,
   onShowHelp,
+  isDesktop,
 }: TopBarProps) {
   return (
     <div className="w-full max-w-[800px] flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-xl mb-3 shadow-lg flex-wrap gap-3">
@@ -75,22 +78,27 @@ export function TopBar({
         >
           <HelpCircle className="w-4 h-4 text-cyan-400" />
         </button>
-        <button
-          onClick={onSave}
-          disabled={isWaveActive || gameOver || gameWon}
-          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition disabled:opacity-30"
-          title="บันทึกเกม (Save)"
-        >
-          <Save className="w-4 h-4 text-emerald-400" />
-        </button>
-        <button
-          onClick={onLoad}
-          disabled={isWaveActive || gameOver || gameWon}
-          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition disabled:opacity-30"
-          title="โหลดเกม (Load)"
-        >
-          <FolderOpen className="w-4 h-4 text-cyan-400" />
-        </button>
+        {/* 🆕 Save/Load แสดงเฉพาะ Desktop (มือถือ/tablet ซ่อน เพราะไม่จำเป็น) */}
+        {isDesktop && (
+          <>
+            <button
+              onClick={onSave}
+              disabled={isWaveActive || gameOver || gameWon}
+              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition disabled:opacity-30"
+              title="บันทึกเกม (Save)"
+            >
+              <Save className="w-4 h-4 text-emerald-400" />
+            </button>
+            <button
+              onClick={onLoad}
+              disabled={isWaveActive || gameOver || gameWon}
+              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition disabled:opacity-30"
+              title="โหลดเกม (Load)"
+            >
+              <FolderOpen className="w-4 h-4 text-cyan-400" />
+            </button>
+          </>
+        )}
         <button
           onClick={onToggleSound}
           className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition"
