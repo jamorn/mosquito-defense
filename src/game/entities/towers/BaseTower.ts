@@ -89,7 +89,12 @@ export abstract class BaseTower extends GameObject {
     ) => void,
   ): void;
 
+  /**
+   * ภาพรวมป้อม: pulse ring + ตัวป้อม (drawBody ตามสไตล์แต่ละแบบ) + ระดับ L
+   * 🎯 แต่ละป้อม override drawBody() ให้มีรูปร่างเอกลักษณ์ของตัวเอง (ไม่ใช่แค่เปลี่ยนสีวงกลม)
+   */
   public draw(ctx: CanvasRenderingContext2D): void {
+    // Pulse ring ตอนวาง/อัปเกรด
     if (this.pulseTimer > 0) {
       const pulseRadius = 18 + (500 - this.pulseTimer) / 8;
       const pulseAlpha = this.pulseTimer / 500;
@@ -107,23 +112,14 @@ export abstract class BaseTower extends GameObject {
     ctx.shadowBlur = 18;
     ctx.shadowColor = this.config.glowColor;
 
-    ctx.strokeStyle = this.config.color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 18, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = "#1e293b";
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = this.config.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
-    ctx.fill();
+    // ตัวป้อม (แต่ละแบบวาดเอง)
+    this.drawBody(ctx);
 
     ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // ระดับ L (shared)
+    ctx.save();
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
@@ -131,6 +127,9 @@ export abstract class BaseTower extends GameObject {
     ctx.fillText(`L${this.level}`, this.x, this.y + 26);
     ctx.restore();
   }
+
+  /** วาดตัวป้อมตามสไตล์เฉพาะแต่ละชนิด — subclass ต้อง override */
+  protected abstract drawBody(ctx: CanvasRenderingContext2D): void;
 
   public drawRangeHighlight(ctx: CanvasRenderingContext2D): void {
     ctx.save();

@@ -58,6 +58,22 @@ export abstract class Mosquito extends GameObject {
     this.slowTimer = durationMs;
   }
 
+  /**
+   * 🎯 คำนวณ HP ยุง (wave-scaled)
+   *    เดิม: baseHp + wave*hpPerWave (เส้นตรง)
+   *    ใหม่: (baseHp + wave*hpPerWave) × 1.3^(wave-1)
+   *    → เพิ่มทวีคูณ ~30% ต่อ wave เพื่อให้ยุงตายยากขึ้นเรื่อยๆ
+   */
+  protected static calcHp(
+    baseHp: number,
+    hpPerWave: number,
+    wave: number,
+  ): number {
+    const linear = baseHp + wave * hpPerWave;
+    const scale = Math.pow(1.3, wave - 1);
+    return Math.round(linear * scale);
+  }
+
   public applyFreeze(durationMs: number): void {
     this.freezeTimer = durationMs;
   }

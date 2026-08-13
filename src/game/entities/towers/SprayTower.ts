@@ -14,6 +14,41 @@ export class SprayTower extends BaseTower {
     super(x, y, "SPRAY_SLOW", TOWER_CONFIGS.SPRAY_SLOW);
   }
 
+  /**
+   * รูปร่าง: ขวดสเปรย์ยากันยุง (ทรงตั้ง)
+   *   - ลำตัวขวดทรงตั้ง 4 เหลี่ยมมน
+   *   - ฝาหัวกด + หัวฉีดเล็กๆ
+   */
+  protected drawBody(ctx: CanvasRenderingContext2D): void {
+    const x = this.x;
+    const y = this.y;
+
+    // ฝาหัวกด (ด้านบน)
+    ctx.fillStyle = "#065f46";
+    ctx.fillRect(x - 7, y - 14, 14, 6); // ฝา
+    ctx.fillStyle = "#10b981";
+    ctx.beginPath();
+    ctx.roundRect(x - 2, y - 17, 4, 5, 2); // หัวฉีดยื่นขึ้น
+    ctx.fill();
+
+    // ลำตัวขวด (กระบอกมน)
+    ctx.fillStyle = "#10b981";
+    ctx.beginPath();
+    ctx.roundRect(x - 9, y - 8, 18, 18, 5); // ตัวขวดทรงตั้ง
+    ctx.fill();
+
+    // เส้นแนวตั้งให้ดูเป็นขวดมีฝา
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - 6, y - 4, 12, 10);
+
+    // ฉลากยุง 🦟 เล็กๆ กลางขวด
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🦟", x, y + 1);
+  }
+
   public updateAndAttack(
     now: number,
     mosquitoes: Mosquito[],

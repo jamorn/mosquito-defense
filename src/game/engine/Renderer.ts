@@ -57,78 +57,57 @@ export class Renderer {
   }
 
   /**
-   * วาด Path แบบ Neon Glow (2.5D Style)
+   * วาด Path — สงบ/ชัด ไม่ฟุ้งเกิน (ลดออร่าจากเดิม 5 layer → 3 layer)
    */
   public drawPath(): void {
     this.ctx.save();
-
-    // Layer 1: Outer Glow (กว้างที่สุด)
-    this.ctx.shadowBlur = 30;
-    this.ctx.shadowColor = "#06b6d4";
-    this.ctx.strokeStyle = "rgba(6, 182, 212, 0.15)";
-    this.ctx.lineWidth = 42;
     this.ctx.lineCap = "round";
     this.ctx.lineJoin = "round";
 
+    // Path ปั้น (ทั้งเส้นทาง) — ใช้ครั้งเดียว แล้ววาด 3 ชั้นทับ
     this.ctx.beginPath();
     this.ctx.moveTo(GAME_PATH[0].x, GAME_PATH[0].y);
     for (let i = 1; i < GAME_PATH.length; i++) {
       this.ctx.lineTo(GAME_PATH[i].x, GAME_PATH[i].y);
     }
+
+    // Layer 1: พื้นถนน (ขอบอ่อน, แทบไม่ glow)
+    this.ctx.shadowBlur = 0;
+    this.ctx.strokeStyle = "rgba(14, 116, 144, 0.55)";
+    this.ctx.lineWidth = 14;
     this.ctx.stroke();
 
-    // Layer 2: Middle Glow
-    this.ctx.shadowBlur = 20;
-    this.ctx.strokeStyle = "rgba(6, 182, 212, 0.3)";
-    this.ctx.lineWidth = 32;
+    // Layer 2: พื้นถนนทึบด้านใน
+    this.ctx.strokeStyle = "rgba(8, 51, 68, 0.85)";
+    this.ctx.lineWidth = 11;
     this.ctx.stroke();
 
-    // Layer 3: Inner Glow
-    this.ctx.shadowBlur = 12;
-    this.ctx.strokeStyle = "rgba(6, 182, 212, 0.5)";
-    this.ctx.lineWidth = 26;
+    // Layer 3: เส้นกึ่งกลางจาง (บอกทิศทาง, ไม่เรืองแสง)
+    this.ctx.strokeStyle = "rgba(125, 211, 252, 0.45)";
+    this.ctx.lineWidth = 1.5;
     this.ctx.stroke();
 
-    // Layer 4: Core Path
-    this.ctx.shadowBlur = 6;
-    this.ctx.strokeStyle = "rgba(2, 132, 199, 0.9)";
-    this.ctx.lineWidth = 20;
-    this.ctx.stroke();
-
-    // Layer 5: Center Line (เรืองแสง)
-    this.ctx.shadowBlur = 10;
-    this.ctx.shadowColor = "#22d3ee";
-    this.ctx.strokeStyle = "#22d3ee";
-    this.ctx.lineWidth = 3;
-    this.ctx.stroke();
-
-    // Animated Flow Effect (จุดเคลื่อนที่ตาม Path)
+    // Animated Flow Effect (ลดเหลือ 2 จุด, จาง ไม่ฟุ้ง)
     this.drawPathFlow();
 
     this.ctx.restore();
   }
 
   /**
-   * วาด Flow Effect บน Path (จุดแสงเคลื่อนที่)
+   * วาด Flow Effect บน Path (จุดแสงเคลื่อนที่, จางและน้อยลง)
    */
   private drawPathFlow(): void {
     const flowSpeed = 0.001;
-    const numFlows = 5;
+    const numFlows = 2;
 
     for (let i = 0; i < numFlows; i++) {
       const progress = (this.frameCount * flowSpeed + i / numFlows) % 1;
       const pos = this.getPointOnPath(progress);
 
       if (pos) {
-        this.ctx.fillStyle = "rgba(34, 211, 238, 0.8)";
+        this.ctx.fillStyle = "rgba(34, 211, 238, 0.5)";
         this.ctx.beginPath();
-        this.ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Glow
-        this.ctx.fillStyle = "rgba(34, 211, 238, 0.3)";
-        this.ctx.beginPath();
-        this.ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+        this.ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
         this.ctx.fill();
       }
     }
