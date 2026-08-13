@@ -25,15 +25,15 @@
         "noFallthroughCasesInSwitch": true,
 
     /* Path Aliases */
-    "baseUrl": ".",
+    
     "paths": {
-      "@/*": ["src/*"],
-      "@game/*": ["src/game/*"],
-      "@config/*": ["src/config/*"],
-      "@components/*": ["src/components/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@types/*": ["src/types/*"],
-      "@utils/*": ["src/utils/*"]
+      "@/*": ["./src/*"],
+      "@game/*": ["./src/game/*"],
+      "@config/*": ["./src/config/*"],
+      "@components/*": ["./src/components/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@types/*": ["./src/types/*"],
+      "@utils/*": ["./src/utils/*"]
     }
   },
   "include": ["src"],
