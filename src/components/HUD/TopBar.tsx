@@ -1,6 +1,14 @@
 // src/components/HUD/TopBar.tsx
-import React from 'react';
-import { Shield, Play, Volume2, VolumeX, Save, FolderOpen } from 'lucide-react';
+import React from "react";
+import {
+  Shield,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Save,
+  FolderOpen,
+} from "lucide-react";
 
 interface TopBarProps {
   coins: number;
@@ -11,7 +19,9 @@ interface TopBarProps {
   gameOver: boolean;
   gameWon: boolean;
   soundEnabled: boolean;
+  isPaused: boolean;
   onToggleSound: () => void;
+  onTogglePause: () => void;
   onStartWave: () => void;
   onSave: () => void;
   onLoad: () => void;
@@ -26,7 +36,9 @@ export function TopBar({
   gameOver,
   gameWon,
   soundEnabled,
+  isPaused,
   onToggleSound,
+  onTogglePause,
   onStartWave,
   onSave,
   onLoad,
@@ -74,20 +86,44 @@ export function TopBar({
           className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition"
           title="เปิด/ปิด เสียง"
         >
-          {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+          {soundEnabled ? (
+            <Volume2 className="w-4 h-4 text-amber-400" />
+          ) : (
+            <VolumeX className="w-4 h-4 text-slate-500" />
+          )}
+        </button>
+
+        {/* ⏸️ Pause / Resume */}
+        <button
+          onClick={onTogglePause}
+          disabled={gameOver || gameWon}
+          className={`p-2 rounded-lg transition ${
+            isPaused
+              ? "bg-amber-500 text-slate-950"
+              : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+          } disabled:opacity-30`}
+          title={isPaused ? "เล่นต่อ (Resume)" : "หยุดชั่วคราว (Pause)"}
+        >
+          {isPaused ? (
+            <Play className="w-4 h-4 fill-current" />
+          ) : (
+            <Pause className="w-4 h-4" />
+          )}
         </button>
 
         <button
           onClick={onStartWave}
-          disabled={isWaveActive || gameOver || gameWon}
+          disabled={isWaveActive || gameOver || gameWon || isPaused}
           className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold shadow-lg transition transform active:scale-95 text-sm sm:text-base ${
             isWaveActive
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+              : isPaused
+                ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                : "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20"
           }`}
         >
           <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-          <span>{isWaveActive ? 'กำลังป้องกัน...' : 'ปล่อยยุง (Start)'}</span>
+          <span>{isWaveActive ? "กำลังป้องกัน..." : "ปล่อยยุง (Start)"}</span>
         </button>
       </div>
     </div>

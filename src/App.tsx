@@ -1,6 +1,5 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Info } from "lucide-react";
 
 // Game Engine
 import { Renderer } from "./game/engine/Renderer";
@@ -33,11 +32,12 @@ import { GameCanvas } from "./components/GameCanvas";
 import { TopBar } from "./components/HUD/TopBar";
 import { WaveIndicator } from "./components/HUD/WaveIndicator";
 import { ItemBar } from "./components/HUD/ItemBar";
-import { TowerShop } from "./components/Shop/TowerShop";
-import { ItemGuide } from "./components/Shop/ItemGuide";
+import { BuildBar } from "./components/Shop/BuildBar";
 import { TowerInspector } from "./components/Inspector/TowerInspector";
 import { GameOverOverlay } from "./components/Overlays/GameOverOverlay";
 import { VictoryOverlay } from "./components/Overlays/VictoryOverlay";
+import { PauseOverlay } from "./components/Overlays/PauseOverlay";
+import { OrientationLock } from "./components/OrientationLock";
 
 // Utils
 import { pointToSegmentDistance } from "./utils/math";
@@ -62,6 +62,7 @@ export default function App() {
   const [selectedTowerInstance, setSelectedTowerInstance] =
     useState<BaseTower | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(performance.now());
   const [failedWave, setFailedWave] = useState<number | null>(null);
 
@@ -86,6 +87,8 @@ export default function App() {
   const gameOverRef = useRef(gameOver);
   const gameWonRef = useRef(gameWon);
   const failedWaveRef = useRef(failedWave);
+  // 🆕 Pause ref (sync กับ state สำหรับ game loop)
+  const isPausedRef = useRef(isPaused);
 
   // 🆕 Ghost Preview refs (สำหรับวาดใน game loop)
   const mousePosRef = useRef<{ x: number; y: number } | null>(null);
@@ -110,6 +113,9 @@ export default function App() {
   useEffect(() => {
     failedWaveRef.current = failedWave;
   }, [failedWave]);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   // 🆕 Sync refs ใหม่สำหรับ Ghost Preview
   useEffect(() => {
@@ -167,9 +173,16 @@ export default function App() {
     soundSystemRef.current.setEnabled(next);
   }, [soundEnabled]);
 
+  // 🆕 Pause / Resume — หยุด/เล่นต่อเกม
+  const togglePause = useCallback(() => {
+    if (gameOver || gameWon) return; // ห้าม pause ถ้าเกมจบแล้ว
+    setIsPaused((prev) => !prev);
+  }, [gameOver, gameWon]);
+
   const handleUseItem = useCallback(
     (type: ItemType) => {
-      if (gameOver || gameWon) return;
+      // ⏸️ หยุดเกม → ใช้ไอเทมไม่ได้
+      if (isPaused || gameOver || gameWon) return;
       const item = itemsRef.current[type];
       const now = performance.now();
 
@@ -190,7 +203,7 @@ export default function App() {
   );
 
   const startNextWave = useCallback(() => {
-    if (isWaveActive) return;
+    if (isPaused || isWaveActive) return;
     setIsWaveActive(true);
 
     const pattern = waveSystemRef.current.startWave(wave);
@@ -199,17 +212,15 @@ export default function App() {
     );
   }, [isWaveActive, wave]);
 
-  const handleCanvasClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (gameOverRef.current || gameWonRef.current) return;
+  // 🆕 แยก "logic วางป้อม" ออกมาเป็น function กลาง
+  //    ใช้ร่วมกันทั้ง mouse click และ touch (มือถือ/tablet) — กด-ลาก-วาง
+  const tryPlaceAt = useCallback(
+    (x: number, y: number) => {
+      // ⏸️ หยุดเกม → วางป้อมไม่ได้
+      if (isPausedRef.current || gameOverRef.current || gameWonRef.current)
+        return;
 
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-      const y = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
-
+      // แตะโดนป้อม → เลือกป้อมนั้น
       const clickedTower = towersRef.current.find(
         (t) => Math.hypot(t.x - x, t.y - y) < 25,
       );
@@ -220,19 +231,72 @@ export default function App() {
 
       setSelectedTowerInstance(null);
 
-      if (selectedTowerType) {
-        const cost = TOWER_CONFIGS[selectedTowerType].cost;
-        if (coins >= cost && isValidPlacement(x, y)) {
+      if (selectedTowerTypeRef.current) {
+        const type = selectedTowerTypeRef.current;
+        const cost = TOWER_CONFIGS[type].cost;
+        if (coinsRef.current >= cost && isValidPlacement(x, y)) {
           setCoins((prev) => prev - cost);
-          const newTower = TowerFactory.createTower(selectedTowerType, x, y);
+          const newTower = TowerFactory.createTower(type, x, y);
           towersRef.current.push(newTower);
           addParticles(x, y, newTower.config.glowColor, 12);
           soundSystemRef.current.play("upgrade");
         }
       }
     },
-    [selectedTowerType, coins, isValidPlacement, addParticles],
+    [isValidPlacement, addParticles],
   );
+
+  // 🆕 ป้องกันวางซ้ำ: บนมือถือหลัง touchend จะเกิด synthetic click ตามมา
+  //    เลยต้อง "ข้าม" click ถัดไป 1 ครั้งที่มาจาก touch (กันวางป้อมซ้ำ 2 อัน)
+  const suppressNextClickRef = useRef(false);
+
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      // ข้าม click ที่เกิดจาก touch (เพื่อกันวางซ้ำ)
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false;
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
+      const y = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
+      tryPlaceAt(x, y);
+    },
+    [tryPlaceAt],
+  );
+
+  // ==========================================
+  // 🆕 TOUCH SUPPORT (มือถือ/tablet — กด-ลาก-วาง เหมือน PC)
+  // ==========================================
+  // ใช้ ref เพื่อบอกว่ากำลัง "กดนิ้วค้างลาก" (ระหว่างนั้นไม่แหก ghost)
+  const touchDraggingRef = useRef(false);
+
+  const handleCanvasTouchStart = useCallback((x: number, y: number) => {
+    touchDraggingRef.current = true;
+    mousePosRef.current = { x, y };
+  }, []);
+
+  const handleCanvasTouchMove = useCallback((x: number, y: number) => {
+    // ระหว่างลากนิ้ว → ย้าย ghost preview ตามนิ้ว
+    if (touchDraggingRef.current) {
+      mousePosRef.current = { x, y };
+    }
+  }, []);
+
+  const handleCanvasTouchEnd = useCallback(() => {
+    if (!touchDraggingRef.current) return;
+    touchDraggingRef.current = false;
+
+    // ปล่อยนิ้ว → วาง (ถ้า ghost ยังอยู่)
+    if (mousePosRef.current) {
+      const { x, y } = mousePosRef.current;
+      tryPlaceAt(x, y);
+      // ป้องกัน synthetic click ที่ตามมาบนมือถือ (ไม่ให้วางซ้ำ)
+      suppressNextClickRef.current = true;
+    }
+  }, [tryPlaceAt]);
 
   // 🆕 ติดตามตำแหน่งเมาส์สำหรับ Ghost Preview
   const handleCanvasMouseMove = useCallback((x: number, y: number) => {
@@ -304,6 +368,7 @@ export default function App() {
     towersRef.current = data.towers;
     itemsRef.current = data.items;
     setIsWaveActive(false);
+    setIsPaused(false); // 🆕 เลิก pause เมื่อโหลดเกม
     mosquitoesRef.current = [];
     waveSystemRef.current.reset();
 
@@ -325,6 +390,7 @@ export default function App() {
 
     // Reset wave state (keep wave number)
     setIsWaveActive(false);
+    setIsPaused(false); // 🆕 เลิก pause เมื่อ Retry
     setGameOver(false);
     setEnemiesRemaining(0);
 
@@ -353,6 +419,7 @@ export default function App() {
     setGameOver(false);
     setGameWon(false);
     setFailedWave(null);
+    setIsPaused(false); // 🆕 เริ่มเกมใหม่ → ไม่ pause ค้าง
     towersRef.current = [];
     mosquitoesRef.current = [];
     particlesRef.current = [];
@@ -394,8 +461,9 @@ export default function App() {
       renderer.drawPath();
       renderer.drawHome();
 
-      // Skip game logic if game over
-      if (!gameOverRef.current && !gameWonRef.current) {
+      // ⏸️ Skip game logic ถ้า game over / จบ / หรือ pause
+      //    (พัก: ยังวาดฉากไว้ แต่ยุง-ป้อม-เวฟ หยุดทั้งหมด)
+      if (!gameOverRef.current && !gameWonRef.current && !isPausedRef.current) {
         // Spawn mosquitoes
         if (isWaveActiveRef.current) {
           // ส่งยุงบนจอไป check "ประตูว่าง" (hold ปล่อยถ้าขวาง)
@@ -510,9 +578,11 @@ export default function App() {
       }
 
       // 🆕 Ghost Preview: ครมบูรณ์ของป้อมที่กำลังจะวาง (ตามเมาส์)
+      //    ซ่อนตอน pause (กันสับสนว่าวางได้)
       if (
         !gameOverRef.current &&
         !gameWonRef.current &&
+        !isPausedRef.current &&
         selectedTowerTypeRef.current &&
         mousePosRef.current
       ) {
@@ -541,109 +611,114 @@ export default function App() {
   const currentWavePattern = getWavePattern(wave);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950 text-white font-sans">
-      {/* CANVAS AREA */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <TopBar
-          coins={coins}
-          lives={lives}
-          wave={wave}
-          enemiesRemaining={enemiesRemaining}
-          isWaveActive={isWaveActive}
-          gameOver={gameOver}
-          gameWon={gameWon}
-          soundEnabled={soundEnabled}
-          onToggleSound={toggleSound}
-          onStartWave={startNextWave}
-          onSave={saveGame}
-          onLoad={loadGame}
-        />
-
-        <div className="relative border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
-          <GameCanvas
-            canvasRef={canvasRef}
-            onCanvasClick={handleCanvasClick}
-            onCanvasMouseMove={handleCanvasMouseMove}
-            onCanvasMouseLeave={handleCanvasMouseLeave}
-          />
-
-          <WaveIndicator
-            pattern={currentWavePattern}
-            isWaveActive={isWaveActive}
-          />
-
-          <ItemBar
-            items={itemsRef.current}
+    <OrientationLock>
+      <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950 text-white font-sans">
+        {/* CANVAS AREA */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <TopBar
             coins={coins}
-            currentTime={currentTime}
+            lives={lives}
+            wave={wave}
+            enemiesRemaining={enemiesRemaining}
+            isWaveActive={isWaveActive}
             gameOver={gameOver}
             gameWon={gameWon}
-            onUseItem={handleUseItem}
+            soundEnabled={soundEnabled}
+            isPaused={isPaused}
+            onToggleSound={toggleSound}
+            onTogglePause={togglePause}
+            onStartWave={startNextWave}
+            onSave={saveGame}
+            onLoad={loadGame}
           />
 
-          {gameOver && (
-            <GameOverOverlay
-              failedWave={failedWave}
-              onRetryWave={retryWave}
-              onResetGame={resetGame}
+          <div className="relative border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
+            <GameCanvas
+              canvasRef={canvasRef}
+              onCanvasClick={handleCanvasClick}
+              onCanvasMouseMove={handleCanvasMouseMove}
+              onCanvasMouseLeave={handleCanvasMouseLeave}
+              onCanvasTouchStart={handleCanvasTouchStart}
+              onCanvasTouchMove={handleCanvasTouchMove}
+              onCanvasTouchEnd={handleCanvasTouchEnd}
+            />
+
+            <WaveIndicator
+              pattern={currentWavePattern}
+              isWaveActive={isWaveActive}
+            />
+
+            <ItemBar
+              items={itemsRef.current}
+              coins={coins}
+              currentTime={currentTime}
+              gameOver={gameOver}
+              gameWon={gameWon}
+              onUseItem={handleUseItem}
+            />
+
+            {isPaused && !gameOver && !gameWon && (
+              <PauseOverlay
+                onResume={togglePause}
+                soundEnabled={soundEnabled}
+                onToggleSound={toggleSound}
+              />
+            )}
+
+            {gameOver && (
+              <GameOverOverlay
+                failedWave={failedWave}
+                onRetryWave={retryWave}
+                onResetGame={resetGame}
+              />
+            )}
+
+            {gameWon && <VictoryOverlay onResetGame={resetGame} />}
+          </div>
+        </div>
+
+        {/* 🆕 RIGHT BUILD BAR — สไตล์ RTS (Red Alert) ทางขวามือ
+           แสดง icon ป้อมล้วน วางซ้อนกัน ขนาดกะทัดรัด เหมาะ PC + Tablet/Mobile */}
+        <aside className="flex flex-col items-center gap-4 lg:w-[88px] border-l border-slate-800 bg-slate-900 py-4 px-2 order-last lg:order-none">
+          <BuildBar
+            direction="col"
+            selectedTowerType={selectedTowerType}
+            selectedTowerInstance={selectedTowerInstance}
+            coins={coins}
+            onSelectTower={(type) => {
+              setSelectedTowerType(type);
+              setSelectedTowerInstance(null);
+            }}
+          />
+
+          {/* ตัว Inspector — เปิดเมื่อมีป้อมถูกเลือก (วางซ้อน BuildBar, บนสุด) */}
+          {selectedTowerInstance && (
+            <TowerInspector
+              selectedTowerInstance={selectedTowerInstance}
+              coins={coins}
+              onUpgrade={handleUpgradeTower}
+              onSell={handleSellTower}
+              onClose={() => setSelectedTowerInstance(null)}
             />
           )}
+        </aside>
 
-          {gameWon && <VictoryOverlay onResetGame={resetGame} />}
-        </div>
-      </div>
-
-      {/* RIGHT SIDEBAR */}
-      <div className="w-full lg:w-96 bg-slate-900 border-l border-slate-800 p-6 flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-1">
-            MOSQUITO DEFENSE
-          </h1>
-          <p className="text-xs text-slate-400">
-            สถาปัตยกรรม OOP + Retry Wave System
-          </p>
-        </div>
-
-        <TowerShop
-          selectedTowerType={selectedTowerType}
-          selectedTowerInstance={selectedTowerInstance}
-          coins={coins}
-          onSelectTower={(type) => {
-            setSelectedTowerType(type);
-            setSelectedTowerInstance(null);
-          }}
-        />
-
-        <ItemGuide />
-
-        <TowerInspector
-          selectedTowerInstance={selectedTowerInstance}
-          coins={coins}
-          onUpgrade={handleUpgradeTower}
-          onSell={handleSellTower}
-          onClose={() => setSelectedTowerInstance(null)}
-        />
-
-        <div className="mt-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 text-xs text-slate-400 space-y-2">
-          <div className="flex items-center gap-1.5 font-bold text-slate-300">
-            <Info className="w-4 h-4 text-cyan-400" /> ฟีเจอร์เด่น
+        {/* 🆕 Bottom Bar — สำหรับมือถือ/tablet แนวตั้ง (build bar แบบแถว) */}
+        <div className="lg:hidden w-full border-t border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="flex items-center gap-2 overflow-x-auto justify-center">
+            <BuildBar
+              direction="row"
+              selectedTowerType={selectedTowerType}
+              selectedTowerInstance={selectedTowerInstance}
+              coins={coins}
+              onSelectTower={(type) => {
+                setSelectedTowerType(type);
+                setSelectedTowerInstance(null);
+              }}
+            />
           </div>
-          <ul className="list-disc list-inside space-y-1">
-            <li>
-              รองรับ <code className="text-emerald-400">Retry Wave</code>{" "}
-              ที่แพ้โดยไม่ต้องเริ่มใหม่
-            </li>
-            <li>
-              รองรับ <code className="text-emerald-400">Save / Load</code> ผ่าน
-              LocalStorage
-            </li>
-            <li>
-              ระบบ <code className="text-amber-400">Counter-Play</code>{" "}
-              แก้ทางกัน
-            </li>
-          </ul>
         </div>
       </div>
-    </div>
+    </OrientationLock>
   );
 }
